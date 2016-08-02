@@ -115,13 +115,13 @@ defmodule SSDP.Client do
                         end
                     end)}
                 true ->
-                    Logger.info "New Device #{device.device.friendly_name}"
+                    Logger.debug "New Device #{device.device.friendly_name}"
                     %State{state | :devices => [device | state.devices]}
             end
         {:noreply, new_state}
     end
 
-    def handle_info({:udp, _s, ip, port, rest}, state), do:{:noreply, state}
+    def handle_info({:udp, _s, ip, port, rest}, state), do: {:noreply, state}
     def handle_info({:udp_passive, _}, state), do: {:noreply, state}
 
     def parse_keys(rest) do
