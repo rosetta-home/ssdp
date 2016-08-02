@@ -8,7 +8,6 @@ defmodule SSDP.Supervisor do
     def init(:ok) do
         children = [
             worker(SSDP.Client, []),
-            supervisor(Task.Supervisor, [[name: SSDP.Client.PacketSupervisor]]),
         ]
         supervise(children, strategy: :one_for_one)
     end
