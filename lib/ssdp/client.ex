@@ -115,8 +115,7 @@ defmodule SSDP.Client do
                         end
                     end)}
                 true ->
-                    Logger.debug "New Device #{device.device.friendly_name}: #{device.device.udn}"
-                    IO.inspect device
+                    Logger.debug "New Device #{device.device.friendly_name}: #{device.device.udn} #{inspect device}"
                     %State{state | :devices => [device | state.devices]}
             end
         {:noreply, new_state}
