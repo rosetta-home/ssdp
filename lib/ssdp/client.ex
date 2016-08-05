@@ -107,15 +107,16 @@ defmodule SSDP.Client do
     def handle_info({:device, device}, state) do
         new_state =
             cond do
-                Enum.any?(state.devices, fn(dev) -> dev.uri.authority == device.uri.authority end) ->
+                Enum.any?(state.devices, fn(dev) -> dev.device.udn == device.device.udn end) ->
                     %State{state | :devices => Enum.map(state.devices, fn(d) ->
                         cond do
-                            device.uri.authority == d.uri.authority -> device
+                            device.device.udn == d.device.udn -> device
                             true -> d
                         end
                     end)}
                 true ->
-                    Logger.debug "New Device #{device.device.friendly_name}"
+                    Logger.debug "New Device #{device.device.friendly_name}: #{device.device.udn}"
+                    IO.inspect device
                     %State{state | :devices => [device | state.devices]}
             end
         {:noreply, new_state}
@@ -156,6 +157,7 @@ defmodule SSDP.Client do
                         :serial_number => obj["uuid"],
                         :icon_list => [],
                         :service_list => [],
+                        :udn => obj["uuid"],
                     }
                 }
                 {:ok, obj}
