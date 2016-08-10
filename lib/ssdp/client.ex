@@ -68,7 +68,7 @@ defmodule SSDP.Client do
 
     def handle_info(:discover, state) do
         Enum.each(discover_messages, fn(m) ->
-            Logger.info "Sending Discovery: #{m}"
+            Logger.debug "Sending Discovery: #{m}"
             :gen_udp.send(state.udp, @multicast_group, @port, m)
         end)
         Process.send_after(self, :discover, 60000)
@@ -76,14 +76,13 @@ defmodule SSDP.Client do
     end
 
     def handle_info({:udp, _s, ip, port, <<"M-SEARCH * HTTP/1.1", rest :: binary>>}, state) do
-        Logger.info "#{inspect ip} is looking for clients"
         {:noreply, state}
     end
 
     def handle_info({:udp, _s, ip, port, <<"HTTP/1.1 200 OK", rest :: binary>>}, state) do
         case parse_xml(rest, ip) do
             {:ok, obj} -> GenEvent.notify(state.events, {:device, obj})
-            {:error, reason} -> Logger.info("ERROR: #{reason}")
+            {:error, reason} -> Logger.error("#{inspect reason}")
         end
         {:noreply, state}
     end
@@ -99,7 +98,7 @@ defmodule SSDP.Client do
     def handle_info({:udp, _s, ip, port, <<"TYPE: WM-NOTIFY", rest:: binary>>}, state) do
         case parse_json(rest, ip) do
             {:ok, obj} -> GenEvent.notify(state.events, {:device, obj})
-            {:error, reason} -> Logger.info("ERROR: #{reason}")
+            {:error, reason} -> Logger.error("ERROR: #{reason}")
         end
         {:noreply, state}
     end
