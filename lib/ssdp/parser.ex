@@ -43,7 +43,6 @@ defmodule SSDP.Parser do
                     event_sub_url: ~x"./service/eventSubURL/text()",
                     scpd_url: ~x"./service/SCPDURL/text()",
                 ]
-
             ]
         )
     end

@@ -90,7 +90,7 @@ defmodule SSDP.Client do
     def handle_info({:udp, _s, ip, port, <<"NOTIFY * HTTP/1.1", rest :: binary>>}, state) do
         case parse_xml(rest, ip) do
             {:ok, obj} -> GenEvent.notify(state.events, {:device, obj})
-            {:error, reason} -> Logger.info("ERROR: #{reason}")
+            {:error, reason} -> Logger.error("ERROR: #{reason}")
         end
         {:noreply, state}
     end
