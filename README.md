@@ -9,6 +9,7 @@ Also supports [Radio Thermostat](http://www.radiothermostat.com/wifi/) which use
     1. git clone https://github.com/NationalAssociationOfRealtors/ssdp.git
     2. mix do deps.get, deps.compile
     3. iex -S mix
+    4. SSDP.Client.start
 
 ## Usage
 
