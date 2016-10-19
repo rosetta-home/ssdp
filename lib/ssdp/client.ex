@@ -10,7 +10,8 @@ defmodule SSDP.Client do
         defstruct udp: nil,
             events: nil,
             devices: [],
-            handlers: []
+            handlers: [],
+            port: nil
     end
 
     def discover_messages do
@@ -34,7 +35,17 @@ defmodule SSDP.Client do
         GenServer.call(__MODULE__, {:handler, handler})
     end
 
+    def start do
+      GenServer.call(__MODULE__, :start)
+    end
+
     def init(port) do
+        {:ok, events} = GenEvent.start_link([{:name, SSDP.Client.Events}])
+        GenEvent.add_mon_handler(events, SSDP.Handler, self)
+        {:ok, %State{:events => events, :handlers => [{SSDP.Handler, self}], :port => port}}
+    end
+
+    def handle_call(:start, _from, state) do
         udp_options = [
             :binary,
             add_membership:  { @multicast_group, {0,0,0,0} },
@@ -43,11 +54,9 @@ defmodule SSDP.Client do
             multicast_ttl:   2,
             reuseaddr:       true
         ]
-        {:ok, events} = GenEvent.start_link([{:name, SSDP.Client.Events}])
-        GenEvent.add_mon_handler(events, SSDP.Handler, self)
-        {:ok, udp} = :gen_udp.open(port, udp_options)
-        Process.send_after(self(), :discover, 100)
-        {:ok, %State{ :udp => udp, :events => events, :handlers => [{SSDP.Handler, self}]}}
+        {:ok, udp} = :gen_udp.open(state.port, udp_options)
+        Process.send_after(self(), :discover, 0)
+        {:reply, :ok, %State{state | udp: udp}}
     end
 
     def handle_call({:handler, handler}, {pid, _} = from, state) do

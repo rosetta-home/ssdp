@@ -3,7 +3,7 @@ defmodule Ssdp.Mixfile do
 
   def project do
     [app: :ssdp,
-     version: "0.1.0",
+     version: "0.1.1",
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -17,7 +17,7 @@ defmodule Ssdp.Mixfile do
   # Type "mix help compile.app" for more information
   def application do
     [
-        applications: [:logger, :httpoison, :sweet_xml, :xmerl,],
+        applications: [:logger, :httpoison, :sweet_xml, :xmerl],
         mod: {SSDP, []}
     ]
   end
@@ -33,7 +33,7 @@ defmodule Ssdp.Mixfile do
       name: :ssdp,
       files: ["lib", "mix.exs", "README*", "LICENSE*"],
       maintainers: ["Christopher Steven Coté"],
-      licenses: ["MIT License"],
+      licenses: ["Apache License 2.0"],
       links: %{"GitHub" => "https://github.com/NationalAssociationOfRealtors/ssdp",
           "Docs" => "https://github.com/NationalAssociationOfRealtors/ssdp"}
     ]
@@ -44,6 +44,7 @@ defmodule Ssdp.Mixfile do
         {:sweet_xml, "~> 0.6.1"},
         {:httpoison, "~> 0.8.3"},
         {:poison, "~> 2.0"},
+        {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end
 end
