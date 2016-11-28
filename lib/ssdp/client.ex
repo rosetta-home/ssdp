@@ -91,7 +91,7 @@ defmodule SSDP.Client do
     def handle_info({:udp, _s, ip, port, <<"HTTP/1.1 200 OK", rest :: binary>>}, state) do
         case parse_xml(rest, ip) do
             {:ok, obj} -> GenEvent.notify(state.events, {:device, obj})
-            {:error, reason} -> Logger.error("#{inspect reason}")
+            {:error, reason} -> Logger.debug("SSDP Client #{inspect ip} Error Parsing XML Meta: #{inspect reason}")
         end
         {:noreply, state}
     end
@@ -99,7 +99,7 @@ defmodule SSDP.Client do
     def handle_info({:udp, _s, ip, port, <<"NOTIFY * HTTP/1.1", rest :: binary>>}, state) do
         case parse_xml(rest, ip) do
             {:ok, obj} -> GenEvent.notify(state.events, {:device, obj})
-            {:error, reason} -> Logger.error("ERROR: #{reason}")
+            {:error, reason} -> Logger.debug("SSDP Client #{inspect ip} Error Parsing XML Meta: #{inspect reason}")
         end
         {:noreply, state}
     end
@@ -107,7 +107,7 @@ defmodule SSDP.Client do
     def handle_info({:udp, _s, ip, port, <<"TYPE: WM-NOTIFY", rest:: binary>>}, state) do
         case parse_json(rest, ip) do
             {:ok, obj} -> GenEvent.notify(state.events, {:device, obj})
-            {:error, reason} -> Logger.error("ERROR: #{reason}")
+            {:error, reason} -> Logger.debug("SSDP Client #{inspect ip} Error Parsing JSON Meta: #{inspect reason}")
         end
         {:noreply, state}
     end
