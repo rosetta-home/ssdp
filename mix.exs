@@ -41,9 +41,9 @@ defmodule Ssdp.Mixfile do
 
   defp deps do
     [
-        {:sweet_xml, "~> 0.6.1"},
-        {:httpoison, "~> 0.8.3"},
-        {:poison, "~> 2.0"},
+        {:sweet_xml, "~> 0.6.5"},
+        {:httpoison, "~> 0.11.1"},
+        {:poison, "~> 3.1"},
         {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end
