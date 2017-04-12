@@ -76,7 +76,7 @@ defmodule SSDP.Client do
 
   def handle_info(:discover, state) do
     Enum.each(discover_messages, fn(m) ->
-      Process.send_after(self(), {:ping, m}, (:rand.uniform()*1000) |> round)
+      Process.send_after(self(), {:ping, m}, (:rand.uniform()*2000) |> round)
     end)
     Process.send_after(self, :discover, 61000)
     {:noreply, state}
