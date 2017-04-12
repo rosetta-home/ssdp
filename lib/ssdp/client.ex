@@ -76,11 +76,15 @@ defmodule SSDP.Client do
 
   def handle_info(:discover, state) do
     Enum.each(discover_messages, fn(m) ->
-      Logger.debug "Sending Discovery: #{m}"
-      :gen_udp.send(state.udp, @multicast_group, @port, m)
-      :timer.sleep(100)
+      Process.send_after(self(), {:ping, m}, (:rand.uniform()*1000) |> round)
     end)
-    Process.send_after(self, :discover, 59000)
+    Process.send_after(self, :discover, 61000)
+    {:noreply, state}
+  end
+
+  def handle_info({:ping, discover}, state) do
+    Logger.debug "Sending Discovery: #{discover}"
+    :gen_udp.send(state.udp, @multicast_group, @port, discover)
     {:noreply, state}
   end
 
