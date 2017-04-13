@@ -3,8 +3,8 @@ defmodule Ssdp.Mixfile do
 
   def project do
     [app: :ssdp,
-     version: "0.1.4",
-     elixir: "~> 1.3",
+     version: "0.1.5",
+     elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      description: description(),

@@ -8,7 +8,6 @@ defmodule SSDP.Client do
 
   defmodule State do
     defstruct udp: nil,
-      events: nil,
       devices: [],
       handlers: [],
       port: nil
@@ -40,8 +39,7 @@ defmodule SSDP.Client do
   end
 
   def init(port) do
-    {:ok, events} = GenEvent.start_link([{:name, SSDP.Client.Events}])
-    {:ok, %State{:events => events, :port => port}}
+    {:ok, %State{:port => port}}
   end
 
   def handle_call(:start, _from, state) do
@@ -58,25 +56,19 @@ defmodule SSDP.Client do
     {:reply, :ok, %State{state | udp: udp}}
   end
 
-  def handle_call({:handler, handler}, {pid, _} = from, state) do
-    GenEvent.add_mon_handler(state.events, handler, pid)
-    {:reply, :ok, %{state | :handlers => [{handler, pid} | state.handlers]}}
+  def handle_call(:register, {pid, _ref}, state) do
+    Logger.info "Registering: #{inspect pid}"
+    Registry.register(SSDP.Registry, SSDP, pid)
+    {:reply, :ok, state}
   end
 
   def handle_call(:devices, _from, state) do
     {:reply, state.devices, state}
   end
 
-  def handle_info({:gen_event_EXIT, handler, reason}, state) do
-    Enum.each(state.handlers, fn(h) ->
-      GenEvent.add_mon_handler(state.events, elem(h, 0), elem(h, 1))
-    end)
-    {:noreply, state}
-  end
-
   def handle_info(:discover, state) do
     Enum.each(discover_messages, fn(m) ->
-      Process.send_after(self(), {:ping, m}, (:rand.uniform()*2000) |> round)
+      Process.send_after(self(), {:ping, m}, (:rand.uniform()*1000) |> round)
     end)
     Process.send_after(self, :discover, 61000)
     {:noreply, state}
@@ -126,7 +118,7 @@ defmodule SSDP.Client do
   end
 
   def update_devices(device, state) do
-    GenEvent.notify(state.events, {:device, device})
+    SSDP.dispatch(SSDP, {:device, device})
     case state.devices |> Enum.any?(fn(dev) -> dev.device.udn == device.device.udn end) do
       false ->
         Logger.debug "New Device #{device.device.friendly_name}: #{device.device.udn} #{inspect device}"
