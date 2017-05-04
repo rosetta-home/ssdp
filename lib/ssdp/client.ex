@@ -43,17 +43,23 @@ defmodule SSDP.Client do
   end
 
   def handle_call(:start, _from, state) do
-    udp_options = [
-      :binary,
-      add_membership:  { @multicast_group, {0,0,0,0} },
-      multicast_if:    {0,0,0,0},
-      multicast_loop:  false,
-      multicast_ttl:   2,
-      reuseaddr:       true
-    ]
-    {:ok, udp} = :gen_udp.open(state.port, udp_options)
-    Process.send_after(self(), :discover, 0)
-    {:reply, :ok, %State{state | udp: udp}}
+    {:reply, :ok,
+      case state.udp do
+        nil ->
+          udp_options = [
+            :binary,
+            add_membership:  { @multicast_group, {0,0,0,0} },
+            multicast_if:    {0,0,0,0},
+            multicast_loop:  false,
+            multicast_ttl:   2,
+            reuseaddr:       true
+          ]
+          {:ok, udp} = :gen_udp.open(state.port, udp_options)
+          Process.send_after(self(), :discover, 0)
+          %State{state | udp: udp}
+        _exists -> state
+      end
+    }
   end
 
   def handle_call(:register, {pid, _ref}, state) do
