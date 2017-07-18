@@ -91,36 +91,27 @@ defmodule SSDP.Client do
   end
 
   def handle_info({:udp, _s, ip, port, <<"HTTP/1.1 200 OK", rest :: binary>>}, state) do
-    state =
-      case parse_xml(rest, ip) do
-        {:ok, obj} -> obj |> update_devices(state)
-        {:error, reason} ->
-          Logger.debug("SSDP Client #{inspect ip} Error Parsing XML Meta: #{inspect reason}")
-          state
-      end
+    parse_xml(rest, ip)
     {:noreply, state}
   end
 
   def handle_info({:udp, _s, ip, port, <<"NOTIFY * HTTP/1.1", rest :: binary>>}, state) do
-    state =
-      case parse_xml(rest, ip) do
-        {:ok, obj} -> obj |> update_devices(state)
-        {:error, reason} ->
-          Logger.debug("SSDP Client #{inspect ip} Error Parsing XML Meta: #{inspect reason}")
-          state
-      end
+    parse_xml(rest, ip)
     {:noreply, state}
   end
 
   def handle_info({:udp, _s, ip, port, <<"TYPE: WM-NOTIFY", rest:: binary>>}, state) do
-    state =
-      case parse_json(rest, ip) do
-        {:ok, obj} -> obj |> update_devices(state)
-        {:error, reason} ->
-          Logger.debug("SSDP Client #{inspect ip} Error Parsing JSON Meta: #{inspect reason}")
-          state
-      end
+    parse_json(rest, ip)
     {:noreply, state}
+  end
+
+  def handle_info({:result, result}, state) do
+    {:noreply, case result do
+      {:ok, obj} -> obj |> update_devices(state)
+      {:error, reason} ->
+        Logger.debug("SSDP Client Error Parsing Meta: #{inspect reason}")
+        state
+    end}
   end
 
   def update_devices(device, state) do
@@ -150,58 +141,68 @@ defmodule SSDP.Client do
   end
 
   def parse_json(rest, ip) do
-    resp = parse_keys(rest)
-    ip = :inet_parse.ntoa(ip)
-    url = "http://#{ip}"
-    case HTTPoison.get(Dict.get(resp, :location), [], hackney: [:insecure]) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-        obj = Poison.Parser.parse!(body)
-        obj = %{
-          :version => %{
-            :major => obj["api_version"],
-            :minor => 0
-          },
-          :uri => URI.parse(url),
-          :url => url,
-          :device => %{
-            :device_type => Dict.get(resp, :service),
-            :friendly_name => "Radio Thermostat",
-            :manufacturer => "Radio Thermostat",
-            :serial_number => obj["uuid"],
-            :icon_list => [],
-            :service_list => [],
-            :udn => obj["uuid"],
-          }
-        }
-        {:ok, obj}
-      {:ok, %HTTPoison.Response{status_code: 404}} ->
-        {:error, "Not Found"}
-      {:ok, %HTTPoison.Response{body: body}} ->
-        {:error, body}
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, reason}
-    end
-  end
-
-  def parse_xml(rest, ip) do
+    s = self()
+    SSDP.TaskSupervisor |> Task.Supervisor.start_child(fn ->
       resp = parse_keys(rest)
       ip = :inet_parse.ntoa(ip)
       url = "http://#{ip}"
-      case HTTPoison.get(Dict.get(resp, :location), [], hackney: [:insecure]) do
-        {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-          obj = body |> SSDP.Parser.parse
-          obj =
-            cond do
-              obj.url == nil -> %{obj | :uri => URI.parse(url)}
-              true -> %{obj | :uri => URI.parse(to_string(obj.url))}
-            end
-          {:ok, obj}
-        {:ok, %HTTPoison.Response{status_code: 404}} ->
-          {:error, "Not Found"}
-        {:ok, %HTTPoison.Response{body: body}} ->
-          {:error, body}
-        {:error, %HTTPoison.Error{reason: reason}} ->
-          {:error, reason}
-      end
+      res =
+        case HTTPoison.get(Dict.get(resp, :location), [], hackney: [:insecure]) do
+          {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+            obj = Poison.Parser.parse!(body)
+            obj = %{
+              :version => %{
+                :major => obj["api_version"],
+                :minor => 0
+              },
+              :uri => URI.parse(url),
+              :url => url,
+              :device => %{
+                :device_type => Dict.get(resp, :service),
+                :friendly_name => "Radio Thermostat",
+                :manufacturer => "Radio Thermostat",
+                :serial_number => obj["uuid"],
+                :icon_list => [],
+                :service_list => [],
+                :udn => obj["uuid"],
+              }
+            }
+            {:ok, obj}
+          {:ok, %HTTPoison.Response{status_code: 404}} ->
+            {:error, "Not Found"}
+          {:ok, %HTTPoison.Response{body: body}} ->
+            {:error, body}
+          {:error, %HTTPoison.Error{reason: reason}} ->
+            {:error, reason}
+        end
+      s |> send({:result, res})
+    end)
+  end
+
+  def parse_xml(rest, ip) do
+    s = self()
+    SSDP.TaskSupervisor |> Task.Supervisor.start_child(fn ->
+      resp = parse_keys(rest)
+      ip = :inet_parse.ntoa(ip)
+      url = "http://#{ip}"
+      res =
+        case HTTPoison.get(Dict.get(resp, :location), [], hackney: [:insecure]) do
+          {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+            obj = body |> SSDP.Parser.parse
+            obj =
+              cond do
+                obj.url == nil -> %{obj | :uri => URI.parse(url)}
+                true -> %{obj | :uri => URI.parse(to_string(obj.url))}
+              end
+            {:ok, obj}
+          {:ok, %HTTPoison.Response{status_code: 404}} ->
+            {:error, "Not Found"}
+          {:ok, %HTTPoison.Response{body: body}} ->
+            {:error, body}
+          {:error, %HTTPoison.Error{reason: reason}} ->
+            {:error, reason}
+        end
+      s |> send({:result, res})
+    end)
   end
 end
