@@ -28,20 +28,20 @@ defmodule SSDP.Parser do
                 upc: ~x"./upc/text()",
                 presentation_url: ~x"./presentationURL/text()",
                 icon_list: [
-                    ~x"./iconList"l,
-                    mime_type: ~x"./icon/mimetype/text()",
-                    height: ~x"./icon/height/text()",
-                    width: ~x"./icon/width/text()",
-                    depth: ~x"./icon/depth/text()",
-                    url: ~x"./icon/url/text()",
+                    ~x"./iconList/icon"l,
+                    mime_type: ~x"./mimetype/text()",
+                    height: ~x"./height/text()",
+                    width: ~x"./width/text()",
+                    depth: ~x"./depth/text()",
+                    url: ~x"./url/text()",
                 ],
                 service_list: [
-                    ~x"./serviceList"l,
-                    service_type: ~x"./service/serviceType/text()",
-                    service_id: ~x"./service/serviceId/text()",
-                    control_url: ~x"./service/controlURL/text()",
-                    event_sub_url: ~x"./service/eventSubURL/text()",
-                    scpd_url: ~x"./service/SCPDURL/text()",
+                    ~x"./serviceList/service"l,
+                    service_type: ~x"./serviceType/text()",
+                    service_id: ~x"./serviceId/text()",
+                    control_url: ~x"./controlURL/text()",
+                    event_sub_url: ~x"./eventSubURL/text()",
+                    scpd_url: ~x"./SCPDURL/text()",
                 ]
             ]
         )
