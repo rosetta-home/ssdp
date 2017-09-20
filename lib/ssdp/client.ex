@@ -145,9 +145,9 @@ defmodule SSDP.Client do
     SSDP.TaskSupervisor |> Task.Supervisor.start_child(fn ->
       resp = parse_keys(rest)
       ip = :inet_parse.ntoa(ip)
-      url = "http://#{ip}"
+      url = Dict.get(resp, :location)
       res =
-        case HTTPoison.get(Dict.get(resp, :location), [], hackney: [:insecure]) do
+        case HTTPoison.get(url, [], hackney: [:insecure]) do
           {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
             obj = Poison.Parser.parse!(body)
             obj = %{
@@ -156,7 +156,7 @@ defmodule SSDP.Client do
                 :minor => 0
               },
               :uri => URI.parse(url),
-              :url => url,
+              :url => "http://#{ip}",
               :device => %{
                 :device_type => Dict.get(resp, :service),
                 :friendly_name => "Radio Thermostat",
@@ -183,17 +183,12 @@ defmodule SSDP.Client do
     s = self()
     SSDP.TaskSupervisor |> Task.Supervisor.start_child(fn ->
       resp = parse_keys(rest)
-      ip = :inet_parse.ntoa(ip)
-      url = "http://#{ip}"
+      url = Dict.get(resp, :location)
       res =
         case HTTPoison.get(Dict.get(resp, :location), [], hackney: [:insecure]) do
           {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
             obj = body |> SSDP.Parser.parse
-            obj =
-              cond do
-                obj.url == nil -> %{obj | :uri => URI.parse(url)}
-                true -> %{obj | :uri => URI.parse(to_string(obj.url))}
-              end
+            obj = %{obj | :uri => URI.parse(url)}
             {:ok, obj}
           {:ok, %HTTPoison.Response{status_code: 404}} ->
             {:error, "Not Found"}
