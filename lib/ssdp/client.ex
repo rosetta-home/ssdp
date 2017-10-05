@@ -15,6 +15,7 @@ defmodule SSDP.Client do
 
   def discover_messages do
     ["M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 3\r\nST: upnp:rootdevice\r\n\r\n",
+    "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 3\r\nST: ssdp:all\r\n\r\n",
     "TYPE: WM-DISCOVER\r\nVERSION: 1.0\r\n\r\nservices:com.marvell.wm.system*\r\n\r\n",]
   end
 
@@ -191,13 +192,37 @@ defmodule SSDP.Client do
             obj = %{obj | :uri => URI.parse(url)}
             {:ok, obj}
           {:ok, %HTTPoison.Response{status_code: 404}} ->
-            {:error, "Not Found"}
+            {:ok, resp |> parse_empty_response}
           {:ok, %HTTPoison.Response{body: body}} ->
-            {:error, body}
+            {:ok, resp |> parse_empty_response}
           {:error, %HTTPoison.Error{reason: reason}} ->
-            {:error, reason}
+            {:ok, resp |> parse_empty_response}
         end
       s |> send({:result, res})
     end)
   end
+
+  def parse_empty_response(keys) do
+    url = Dict.get(keys, :location)
+    serial = Dict.get(keys, :usn)
+    type = Dict.get(keys, :st)
+    %{
+      :version => %{
+        :major => 1,
+        :minor => 0
+      },
+      :uri => URI.parse(url),
+      :url => url,
+      :device => %{
+        :device_type => type,
+        :friendly_name => "Unknown",
+        :manufacturer => "Unknown",
+        :serial_number => serial,
+        :icon_list => [],
+        :service_list => [],
+        :udn => serial,
+      }
+    }
+  end
+
 end
